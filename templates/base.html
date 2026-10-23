@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}Paper 精译{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232f5a48'/%3E%3Ctext x='32' y='44' font-size='34' font-family='Georgia,serif' text-anchor='middle' fill='%23f6f1e6'%3E译%3C/text%3E%3C/svg%3E">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <div class="reading-progress" id="readingProgress" aria-hidden="true"></div>
+  {% block content %}{% endblock %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,13 @@
+# --- secrets ---
+.env
+
+# --- runtime data ---
+data/
+.scratch/
+.reasonix/
+__pycache__/
+*.pyc
+.venv/
+
+# --- local test paper (copyright; not distributed) ---
+jp309203k.pdf

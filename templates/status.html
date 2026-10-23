@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ job.filename }} · 处理中{% endblock %}
+{% block body_class %}page-status{% endblock %}
+
+{% block content %}
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark">译</span>
+      <span class="brand-text">Paper&nbsp;精译</span>
+    </a>
+    <span class="topbar-meta">{{ model_name }}</span>
+  </div>
+</header>
+
+<main class="status-shell">
+  <div class="status-card">
+    {% if job.status == 'error' %}
+      <p class="eyebrow">TRANSLATION FAILED</p>
+      <h1>这次没有完成</h1>
+      <p class="status-message">{{ job.message }}</p>
+      <details class="error-box">
+        <summary>查看错误详情</summary>
+        <pre class="error-detail">{{ job.error }}</pre>
+      </details>
+      <div class="status-actions">
+        <a class="btn btn-primary" href="/">重新上传</a>
+        <a class="back-link" href="/">返回首页</a>
+      </div>
+    {% else %}
+      <div class="spinner" aria-hidden="true"></div>
+      <p class="eyebrow">PROCESSING · {{ model_name }}</p>
+      <h1>{{ job.filename }}</h1>
+      <p class="status-message" id="statusMessage">{{ job.message }}</p>
+      <div class="progress-track"><span id="statusProgress" style="width: {{ job.progress }}%"></span></div>
+      <div class="status-meta">
+        <span id="statusPercent">{{ job.progress }}</span>%
+        {% if job.pages %} · <span>{{ job.pages }} 页</span>{% endif %}
+        {% if job.total_blocks %} · <span id="statusBlocks">{{ job.translated_blocks }}/{{ job.total_blocks }}</span> 段{% endif %}
+      </div>
+      <ol class="steps" id="statusSteps">
+        <li data-min="0">解析 PDF 版面与图表</li>
+        <li data-min="26">DeepSeek 逐段翻译</li>
+        <li data-min="94">生成通栏双语版式</li>
+      </ol>
+      <p class="status-note">页面会自动刷新；可以离开，稍后从首页回到这个任务。</p>
+    {% endif %}
+  </div>
+  {% if job.status != 'error' %}<a class="back-link status-back" href="/">← 返回首页</a>{% endif %}
+</main>
+{% endblock %}
+
+{% block scripts %}
+{% if poll %}
+<script>window.__JOB_ID__ = {{ job.id|tojson }};</script>
+<script src="/static/status.js" defer></script>
+{% endif %}
+{% endblock %}

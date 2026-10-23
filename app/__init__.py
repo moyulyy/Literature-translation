@@ -1,0 +1,1 @@
+"""Academic PDF translator."""

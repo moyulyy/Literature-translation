@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Paper 精译 · 英文学术 PDF 通栏对照翻译{% endblock %}
+{% block body_class %}page-home{% endblock %}
+
+{% block content %}
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark">译</span>
+      <span class="brand-text">Paper&nbsp;精译</span>
+    </a>
+    <div class="topbar-meta">
+      <span class="dot"></span>
+      <span>{{ model_name }}</span>
+    </div>
+  </div>
+</header>
+
+<main class="landing">
+  <section class="landing-hero">
+    <p class="eyebrow">DEEPSEEK · ACADEMIC TRANSLATION</p>
+    <h1>把英文论文，<br><em>读成中文。</em></h1>
+    <p class="lede">
+      上传一篇英文 PDF。自动重排为中文阅读版式：一段英文原文在上，对应的中文译文在下；
+      公式、化学式、图表与表格保持原样，不被改写。
+    </p>
+    <ul class="feature-line" aria-label="功能特点">
+      <li>上下对照</li>
+      <li>逐段对应</li>
+      <li>图表原样保留</li>
+      <li>公式不翻译</li>
+      <li>下载译文</li>
+    </ul>
+  </section>
+
+  <section class="upload-card" aria-labelledby="uploadTitle">
+    <div class="upload-heading">
+      <h2 id="uploadTitle">上传 PDF</h2>
+      <span>最大 {{ max_mb }} MB</span>
+    </div>
+    <form id="uploadForm" novalidate>
+      <label class="dropzone" id="dropzone" for="pdfInput">
+        <input id="pdfInput" name="file" type="file" accept="application/pdf,.pdf" hidden>
+        <span class="drop-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M4 15.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="drop-title">拖入 PDF，或点击选择文件</span>
+        <span class="drop-hint" id="dropHint">支持学术论文、预印本；推荐 20 MB 以内的文本型 PDF</span>
+        <span class="file-chip" id="fileChip" hidden></span>
+      </label>
+      <div class="upload-actions">
+        <button class="btn btn-primary" id="submitBtn" type="submit" disabled>
+          开始翻译
+          <svg viewBox="0 0 20 20" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M4 10h11m-4-4 4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="privacy-note">Key 保存在本机 .env，不会发送到前端。</span>
+      </div>
+      <p class="form-error" id="formError" role="alert" hidden></p>
+    </form>
+  </section>
+
+  {% if jobs %}
+  <section class="recent" aria-labelledby="recentTitle">
+    <div class="section-heading">
+      <h2 id="recentTitle">最近的翻译</h2>
+      <span>{{ jobs|length }} 个任务</span>
+    </div>
+    <div class="job-list">
+      {% for job in jobs %}
+      <a class="job" href="{{ '/doc/' ~ job.id if job.status == 'done' else '/doc/' ~ job.id }}">
+        <div class="job-main">
+          <span class="job-title">{{ job.title or job.filename }}</span>
+          <span class="job-file">{{ job.filename }}</span>
+        </div>
+        <div class="job-side">
+          {% if job.status == 'done' %}
+            <span class="status status-done">已完成</span>
+          {% elif job.status == 'error' %}
+            <span class="status status-error">失败</span>
+          {% elif job.status == 'translating' %}
+            <span class="status status-run">翻译中</span>
+          {% else %}
+            <span class="status status-run">处理中</span>
+          {% endif %}
+          <span class="job-date">{{ job.created_at[:10] }}</span>
+        </div>
+        {% if job.status not in ('done', 'error') %}
+        <span class="job-progress"><span style="width: {{ job.progress }}%"></span></span>
+        {% endif %}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <footer class="landing-footer">
+    <p>翻译与段落重组由 <strong>{{ model_name }}</strong> 完成；图表、表格、公式与化学式保留原文。</p>
+    <p class="muted">本地运行 · 文件仅保存在本机 data/ 目录</p>
+  </footer>
+</main>
+
+<div class="upload-overlay" id="uploadOverlay" hidden>
+  <div class="overlay-card">
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="overlay-title">正在准备翻译</p>
+    <p class="overlay-message" id="overlayMessage">上传文件中…</p>
+    <div class="progress-track"><span id="overlayProgress"></span></div>
+    <p class="overlay-note">解析版面、裁切图表、调用 DeepSeek，通常需要几十秒。</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/home.js" defer></script>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ view.title_zh }} · Paper 精译{% endblock %}
+{% block body_class %}page-reader view-bi{% endblock %}
+
+{% block content %}
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="reader-left">
+      <a class="back-link" href="/">← 返回</a>
+      <span class="topbar-divider"></span>
+      <span class="topbar-file" title="{{ job.filename }}">{{ job.filename }}</span>
+    </div>
+    <div class="reader-actions">
+      <div class="segmented" role="group" aria-label="显示模式">
+        <button type="button" data-view="bi" class="active">双语</button>
+        <button type="button" data-view="zh">仅中文</button>
+      </div>
+      <button type="button" class="icon-btn" id="printBtn">打印</button>
+    </div>
+  </div>
+</header>
+
+{% if view.failed %}
+<div class="banner" role="status">
+  有 {{ view.failed }} 段未能翻译，页面中已保留英文原文。重新上传可以再试一次。
+</div>
+{% endif %}
+
+<main class="reader-shell">
+  <header class="article-hero">
+    <p class="eyebrow">ACADEMIC PAPER · 双语对照</p>
+    <h1>{{ view.title_zh|rich }}</h1>
+    {% if view.title_en and view.title_en != view.title_zh %}
+    <p class="hero-en" lang="en">{{ view.title_en }}</p>
+    {% endif %}
+    <div class="article-meta">
+      {% if view.authors %}<span class="meta-item authors">{{ view.authors|join(' · ') }}</span>{% endif %}
+      <span class="meta-item">{{ view.pages }} 页</span>
+      <span class="meta-item">译自英文原文</span>
+      {% if view.affiliations %}<span class="meta-item affil">{{ view.affiliations|join(' · ') }}</span>{% endif %}
+    </div>
+  </header>
+
+  <div class="doc-actions">
+    <a class="doc-action" href="/source/{{ job.id }}" target="_blank" rel="noopener">原文 PDF</a>
+    <a class="doc-action" href="/download/source/{{ job.id }}">下载原文</a>
+    <a class="doc-action primary" href="/download/translation/{{ job.id }}" title="下载中文译文（HTML，可打印为 PDF）">下载译文</a>
+  </div>
+
+  {% if view.abstract %}
+  <section class="abstract" aria-label="摘要">
+    <div class="abstract-head"><span class="label">摘要</span><span class="label-en">ABSTRACT</span></div>
+    <p class="abstract-zh">{{ view.abstract.zh|rich }}</p>
+    <p class="abstract-en" lang="en">{{ view.abstract.en }}</p>
+  </section>
+  {% endif %}
+
+  <article class="article">
+    {% for item in view['items'] %}
+      {% if item.type == 'heading' %}
+      <h2 class="section-title" id="{{ item.anchor }}">
+        <span class="section-num">{{ item.number }}</span><span class="section-zh">{{ item.text_zh|rich }}</span>
+        {% if item.text_en and item.text_en != item.text_zh %}<span class="section-en">{{ item.text_en }}</span>{% endif %}
+      </h2>
+
+      {% elif item.type == 'body' %}
+      <div class="pair{% if item.untranslated %} is-untranslated{% endif %}">
+        <p class="src" lang="en">{{ item.en }}</p>
+        <p class="zh">{{ item.zh|rich }}</p>
+        {% if item.untranslated %}<span class="missing-note">译文缺失，显示原文</span>{% endif %}
+      </div>
+
+      {% elif item.type == 'figure' %}
+      <figure class="figure">
+        {% if item.asset %}
+        <img src="/media/{{ job.id }}/{{ item.asset }}?v={{ job.updated_at|urlencode }}" alt="{{ item.alt }}" loading="lazy" decoding="async" data-retry="1">
+        {% else %}
+        <div class="img-fallback">图片资源缺失</div>
+        {% endif %}
+        {% if item.graphical_abstract %}
+        <figcaption class="graphical-abstract">图形摘要 <span>GRAPHICAL ABSTRACT</span></figcaption>
+        {% endif %}
+        {% if item.caption_zh or item.caption_en %}
+        <figcaption>
+          <span class="fig-label">{{ item.label }}</span><span class="cap-zh">{{ item.caption_zh|rich }}</span>
+          {% if item.caption_en %}<span class="cap-en" lang="en">{{ item.caption_en }}</span>{% endif %}
+        </figcaption>
+        {% endif %}
+      </figure>
+
+      {% elif item.type == 'table' %}
+      <figure class="figure figure-table">
+        <figcaption>
+          <span class="fig-label">{{ item.label }}</span><span class="cap-zh">{{ item.caption_zh|rich }}</span>
+          {% if item.caption_en %}<span class="cap-en" lang="en">{{ item.caption_en }}</span>{% endif %}
+        </figcaption>
+        {% if item.asset %}
+        <div class="table-scroll">
+          <img src="/media/{{ job.id }}/{{ item.asset }}?v={{ job.updated_at|urlencode }}" alt="{{ item.alt }}" loading="lazy" decoding="async" data-retry="1">
+        </div>
+        {% else %}
+        <div class="img-fallback">表格资源缺失</div>
+        {% endif %}
+      </figure>
+
+      {% elif item.type == 'equation' %}
+      <figure class="equation">
+        <div class="eq-head"><span>公式 · 保留原文</span><span>EQUATION{% if item.number %} {{ item.number }}{% endif %}</span></div>
+        {% if item.asset %}
+        <img src="/media/{{ job.id }}/{{ item.asset }}?v={{ job.updated_at|urlencode }}" alt="{{ item.alt }}" loading="lazy" decoding="async" data-retry="1">
+        {% else %}
+        <div class="img-fallback">公式图片缺失</div>
+        {% endif %}
+      </figure>
+
+      {% elif item.type == 'caption' %}
+      <p class="standalone-caption">
+        <span class="fig-label">{{ item.label }}</span>{{ item.zh|rich }}
+        {% if item.en %}<span class="cap-en" lang="en">{{ item.en }}</span>{% endif %}
+      </p>
+
+      {% elif item.type == 'footnote' %}
+      <p class="footnote">{{ item.text }}</p>
+
+      {% elif item.type == 'note' %}
+      <p class="note">{{ item.zh or item.text }}</p>
+      {% endif %}
+    {% endfor %}
+  </article>
+
+  <footer class="article-footer">
+    <div class="end-mark">◇ ◇ ◇</div>
+    <p>由 <strong>{{ model_name }}</strong> 翻译并重建版面 · 公式、化学式、图表与表格保留原文</p>
+    <p class="no-print"><a href="/">继续翻译另一篇</a></p>
+  </footer>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/reader.js" defer></script>
+{% endblock %}

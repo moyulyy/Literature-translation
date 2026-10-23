@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Paper 精译">
+  <title>{{ view.title_zh }} · 中文译文</title>
+  <style>
+{{ css|safe }}
+
+/* Standalone download document */
+.download-page {
+  background: #fff;
+  color: #211d17;
+}
+.download-page::before { display: none; }
+.download-page .download-shell {
+  width: min(calc(100vw - 48px), 1100px);
+  margin: 0 auto;
+  padding: 48px 0 72px;
+}
+.download-page .article-hero {
+  padding: 0 0 28px;
+  border-bottom: 1px solid var(--line);
+}
+.download-page .article-hero h1 {
+  max-width: none;
+  font-size: clamp(28px, 3.2vw, 36px);
+}
+.download-page .hero-en {
+  max-width: none;
+  font-size: 14px;
+}
+.download-page .abstract {
+  display: block;
+  margin: 34px 0 0;
+  padding: 26px 30px;
+}
+.download-page .abstract-en { display: none; }
+.download-page .abstract-zh { font-size: 16.5px; }
+.download-page .pair {
+  display: block;
+  margin-bottom: 2rem;
+}
+.download-page .src { display: none; }
+.download-page .zh {
+  border-left: 0;
+  padding-left: 0;
+  font-size: 17px;
+  line-height: 1.95;
+}
+.download-page .section-title { font-size: 25px; margin-top: 46px; }
+.download-page .figure img {
+  max-width: 640px;
+  width: auto;
+  max-height: none;
+  margin: 0 auto;
+}
+.download-page .figure-table img {
+  width: auto;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.download-page .equation img { max-width: 520px; }
+.download-page .doc-actions,
+.download-page .topbar,
+.download-page .reader-actions { display: none; }
+.download-page .article-footer { margin-top: 54px; }
+.download-page .img-fallback {
+  padding: 18px;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+.download-page .cap-en,
+.download-page .section-en { display: none; }
+
+@page { size: A4; margin: 18mm; }
+
+@media print {
+  .download-page { background: #fff; }
+  .download-page .download-shell { width: auto; padding: 0; }
+  .download-page .article-hero { padding-top: 0; }
+  .download-page .pair, .download-page .figure, .download-page .equation, .download-page .abstract {
+    break-inside: avoid;
+  }
+  .download-page .section-title { break-after: avoid; }
+}
+  </style>
+</head>
+<body class="page-reader view-zh download-page">
+<main class="download-shell">
+  <header class="article-hero">
+    <p class="eyebrow">中文译文 · 公式与图表保留原文</p>
+    <h1>{{ view.title_zh|rich }}</h1>
+    {% if view.title_en %}<p class="hero-en" lang="en">{{ view.title_en }}</p>{% endif %}
+    <div class="article-meta">
+      {% if view.authors %}<span class="meta-item authors">{{ view.authors|join(' · ') }}</span>{% endif %}
+      <span class="meta-item">{{ view.pages }} 页</span>
+      <span class="meta-item">译自英文原文</span>
+      {% if view.affiliations %}<span class="meta-item affil">{{ view.affiliations|join(' · ') }}</span>{% endif %}
+    </div>
+  </header>
+
+  {% if view.abstract %}
+  <section class="abstract" aria-label="摘要">
+    <div class="abstract-head"><span class="label">摘要</span><span class="label-en">ABSTRACT</span></div>
+    <p class="abstract-zh">{{ view.abstract.zh|rich }}</p>
+  </section>
+  {% endif %}
+
+  <article class="article">
+    {% for item in view['items'] %}
+      {% if item.type == 'heading' %}
+      <h2 class="section-title">
+        <span class="section-num">{{ item.number }}</span><span class="section-zh">{{ item.text_zh|rich }}</span>
+      </h2>
+
+      {% elif item.type == 'body' %}
+      <p class="zh">{{ item.zh|rich }}</p>
+
+      {% elif item.type == 'figure' %}
+      <figure class="figure">
+        {% if item.src %}
+        <img src="{{ item.src }}" alt="{{ item.alt }}">
+        {% else %}
+        <div class="img-fallback">图片资源缺失</div>
+        {% endif %}
+        {% if item.graphical_abstract %}
+        <figcaption class="graphical-abstract">图形摘要 <span>GRAPHICAL ABSTRACT</span></figcaption>
+        {% endif %}
+        {% if item.caption_zh or item.caption_en %}
+        <figcaption>
+          <span class="fig-label">{{ item.label }}</span><span class="cap-zh">{{ item.caption_zh|rich or item.caption_en }}</span>
+        </figcaption>
+        {% endif %}
+      </figure>
+
+      {% elif item.type == 'table' %}
+      <figure class="figure figure-table">
+        <figcaption>
+          <span class="fig-label">{{ item.label }}</span><span class="cap-zh">{{ item.caption_zh|rich or item.caption_en }}</span>
+        </figcaption>
+        {% if item.src %}
+        <div class="table-scroll"><img src="{{ item.src }}" alt="{{ item.alt }}"></div>
+        {% else %}
+        <div class="img-fallback">表格资源缺失</div>
+        {% endif %}
+      </figure>
+
+      {% elif item.type == 'equation' %}
+      <figure class="equation">
+        <div class="eq-head"><span>公式 · 保留原文</span><span>EQUATION{% if item.number %} {{ item.number }}{% endif %}</span></div>
+        {% if item.src %}
+        <img src="{{ item.src }}" alt="{{ item.alt }}">
+        {% else %}
+        <div class="img-fallback">公式图片缺失</div>
+        {% endif %}
+      </figure>
+
+      {% elif item.type == 'caption' %}
+      <p class="standalone-caption">
+        <span class="fig-label">{{ item.label }}</span>{{ item.zh|rich or item.en }}
+      </p>
+
+      {% elif item.type == 'footnote' %}
+      <p class="footnote">{{ item.text }}</p>
+
+      {% elif item.type == 'note' %}
+      <p class="note">{{ item.zh or item.text }}</p>
+      {% endif %}
+    {% endfor %}
+  </article>
+
+  <footer class="article-footer">
+    <div class="end-mark">◇ ◇ ◇</div>
+    <p>中文译文由 <strong>{{ model_name }}</strong> 生成；公式、化学式、图表与表格保留原文。</p>
+    <p>本文件可直接用浏览器打开，也可通过“打印 → 另存为 PDF”导出 PDF。</p>
+  </footer>
+</main>
+</body>
+</html>
