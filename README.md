@@ -27,6 +27,8 @@
 | 📊 图表原样保留 | 图、表整体裁图并居中显示，图注/表注居中排版 |
 | 🧠 LLM 翻译 | DeepSeek `deepseek-flash`（Responses API）逐段翻译，JSON Schema 结构化输出 |
 | ⚡ 结果缓存 | 按“模型 + 提示词版本 + 类型 + 原文”哈希缓存，重复解析不重复计费 |
+| 🧾 HTML 译文快照 | 翻译完成或打开阅读页时写入 `data/jobs/{job_id}/translation.html` |
+| 🧹 最近任务去重 | 按 PDF SHA-256 去重，同一篇论文只显示最新任务 |
 | 📥 一键导出 | 下载原文 PDF；下载自包含 HTML 译文（图片已内嵌，可打印为 PDF） |
 | 📱 响应式 | 桌面与手机均可阅读；支持双语/仅中文、打印、原文 PDF 浏览器内打开 |
 | 🖼️ 图片容错 | 图片加载失败自动重试，阅读页禁用过期缓存，避免旧页面破图 |
@@ -108,7 +110,8 @@ flowchart LR
 3. **图表与公式**：`find_tables()` 定位表格并整块裁图；图片块与图注锚定矢量图；数学字体/符号密度识别公式并聚类裁图。表格内文字不进入翻译流。
 4. **翻译**：按 6k 字符 / 12 块分批，3 并发调用 `deepseek-flash`；使用 JSON Schema 强制返回 `{id, translation}`，缺块自动按段重试。
 5. **渲染**：服务端 Jinja2 组装约 1200px 阅读栏；英文 14px、中文 18px 衬线正文；图 640px、表 900px、公式 520px 上限，居中显示。
-6. **导出**：原文直接下载 PDF；译文导出为自包含 HTML，图表以 base64 内嵌，可直接打印为 PDF。
+6. **HTML 快照**：翻译完成或首次打开阅读页时，另存 `data/jobs/{job_id}/translation.html`；页面使用相对资源路径，便于直接归档。
+7. **导出**：原文直接下载 PDF；译文导出为自包含 HTML，图表以 base64 内嵌，可直接打印为 PDF。
 
 ## 📁 目录结构
 
@@ -119,7 +122,7 @@ flowchart LR
 │  ├─ pdf_parser.py  PDF 版面解析、阅读顺序、裁图、标题恢复
 │  ├─ pipeline.py    任务流水线、分批翻译、缓存、进度
 │  ├─ llm.py         DeepSeek Responses API 客户端
-│  ├─ storage.py     文件任务存储
+│  ├─ storage.py     文件任务存储、HTML 译文快照、最近任务去重
 │  └─ config.py      .env 与路径配置
 ├─ templates/        index / status / reader / download
 ├─ static/           style.css, home.js, status.js, reader.js

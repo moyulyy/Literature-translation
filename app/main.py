@@ -173,6 +173,7 @@ def build_view(document: dict) -> dict:
             items.append(
                 {
                     "type": "heading",
+                    "id": block["id"],
                     "anchor": block.get("anchor") or f"sec-{block['id']}",
                     "text_zh": block.get("translation") or block.get("text", ""),
                     "text_en": block.get("text", ""),
@@ -183,6 +184,7 @@ def build_view(document: dict) -> dict:
             items.append(
                 {
                     "type": "abstract",
+                    "id": block["id"],
                     "zh": block.get("translation") or block.get("text", ""),
                     "en": block.get("text", ""),
                 }
@@ -191,6 +193,7 @@ def build_view(document: dict) -> dict:
             items.append(
                 {
                     "type": "body",
+                    "id": block["id"],
                     "zh": block.get("translation") or block.get("text", ""),
                     "en": block.get("text", ""),
                     "untranslated": not block.get("translation"),
@@ -306,6 +309,30 @@ def build_download_html(job: dict, document: dict) -> str:
     )
 
 
+def render_reader_html(job_id: str, document: dict) -> str | None:
+    """Render the bilingual reader and persist it as translation.html."""
+    job = storage.get_job(job_id)
+    if job is None:
+        return None
+    view = build_view(document)
+    html = templates.get_template("reader.html").render(
+        job=job,
+        doc=document,
+        view=view,
+        model_name=config.DEEPSEEK_MODEL,
+    )
+    # Keep the served reader on absolute URLs, but make the persisted copy
+    # self-contained enough to open directly from data/jobs/<id>/.
+    stored = html
+    stored = stored.replace('href="/static/', 'href="../../../static/')
+    stored = stored.replace('src="/static/', 'src="../../../static/')
+    stored = stored.replace(f'src="/media/{job_id}/', 'src="assets/')
+    stored = stored.replace(f'href="/source/{job_id}"', 'href="source.pdf"')
+    stored = stored.replace(f'href="/download/source/{job_id}"', 'href="source.pdf"')
+    storage.save_translation_html(job_id, stored)
+    return html
+
+
 @app.get("/doc/{job_id}", response_class=HTMLResponse)
 async def reader(request: Request, job_id: str) -> HTMLResponse:
     job = storage.get_job(job_id)
@@ -322,12 +349,10 @@ async def reader(request: Request, job_id: str) -> HTMLResponse:
     document = storage.load_document(job_id)
     if document is None:
         raise HTTPException(status_code=500, detail="译文数据缺失，请重新上传")
-    view = build_view(document)
-    response = templates.TemplateResponse(
-        request,
-        "reader.html",
-        {"job": job, "doc": document, "view": view},
-    )
+    html = render_reader_html(job_id, document)
+    if html is None:
+        raise HTTPException(status_code=404, detail="任务不存在")
+    response = HTMLResponse(content=html)
     response.headers["Cache-Control"] = "no-store"
     return response
 

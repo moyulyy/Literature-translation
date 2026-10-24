@@ -237,6 +237,12 @@ async def process_job(job_id: str) -> None:
             await client.close()
 
         storage.save_document(job_id, document)
+        try:
+            from .main import render_reader_html
+
+            render_reader_html(job_id, document)
+        except Exception:  # noqa: BLE001 - translation remains usable
+            logger.exception("Failed to persist translation.html for %s", job_id)
         storage.update_job(
             job_id,
             status="done",

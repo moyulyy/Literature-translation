@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-
 from . import config
 
 _JOB_ID_RE = re.compile(r"^[a-f0-9]{8,32}$")
@@ -43,6 +43,7 @@ def create_job(filename: str, content: bytes) -> dict[str, Any]:
     job = {
         "id": job_id,
         "filename": filename,
+        "sha256": hashlib.sha256(content).hexdigest(),
         "status": "queued",
         "progress": 0,
         "message": "已上传，等待处理",
@@ -99,6 +100,32 @@ def load_document(job_id: str) -> dict | None:
         return None
 
 
+def save_translation_html(job_id: str, html: str) -> None:
+    path = job_dir(job_id) / "translation.html"
+    tmp = path.with_suffix(".html.tmp")
+    tmp.write_text(html, encoding="utf-8")
+    tmp.replace(path)
+
+
+def translation_html_path(job_id: str) -> Path:
+    return job_dir(job_id) / "translation.html"
+
+
+def _job_pdf_sha(job: dict[str, Any]) -> str:
+    stored = str(job.get("sha256") or "").strip()
+    if stored:
+        return stored
+    try:
+        path = job_dir(str(job.get("id") or "")) / "source.pdf"
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for block in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(block)
+        return digest.hexdigest()
+    except (OSError, ValueError):
+        return str(job.get("filename") or job.get("id") or "")
+
+
 def list_jobs(limit: int = 12) -> list[dict[str, Any]]:
     jobs: list[dict[str, Any]] = []
     if not config.JOBS_DIR.exists():
@@ -116,7 +143,20 @@ def list_jobs(limit: int = 12) -> list[dict[str, Any]]:
         if job.get("status") in ("done", "error", "translating", "parsing"):
             jobs.append(job)
     jobs.sort(key=lambda item: item.get("created_at", ""), reverse=True)
-    return jobs[:limit]
+
+    # The same PDF may have several translation attempts. Keep only the newest
+    # job for each file so the "recent translations" list does not repeat it.
+    unique: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for job in jobs:
+        key = _job_pdf_sha(job)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(job)
+        if len(unique) >= limit:
+            break
+    return unique
 
 
 def recover_interrupted_jobs() -> None:
